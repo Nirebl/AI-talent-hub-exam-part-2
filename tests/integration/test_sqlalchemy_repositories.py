@@ -195,3 +195,20 @@ def test_retrieval_result_repository_persists_ranked_audit_rows():
     ]
     assert [item.rank for item in loaded] == [1, 2]
     assert all(item.retrieval_run_id == run_id for item in loaded)
+
+
+def test_ticket_repository_finds_by_channel_and_external_id():
+    session = make_session()
+    repository = SqlAlchemyTicketRepository(session)
+    ticket = make_ticket()
+    ticket.external_id = "external-lookup-1"
+    repository.add(ticket)
+    session.commit()
+
+    loaded = repository.find_by_external_id(
+        channel=ticket.channel,
+        external_id="external-lookup-1",
+    )
+
+    assert loaded is not None
+    assert loaded.id == ticket.id

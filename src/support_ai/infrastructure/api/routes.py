@@ -1,12 +1,15 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from support_ai.application.use_cases.get_ticket_details import (
     GetTicketDetailsUseCase,
     TicketNotFoundError,
 )
-from support_ai.application.use_cases.process_ticket import ProcessTicketUseCase
+from support_ai.application.use_cases.process_ticket import (
+    DuplicateTicketConflictError,
+    ProcessTicketUseCase,
+)
 from support_ai.domain.enums import TicketStatus
 from support_ai.infrastructure.api.dependencies import (
     get_container,
@@ -51,8 +54,8 @@ def ready() -> ReadyResponse:
         generation_status=container.generation_status,
         queue_backend=container.queue_backend,
         llm_backend=container.llm_backend,
-        generator_name=container.generator.name,
-        generator_version=container.generator.version,
+        generator_name=container.generator_name,
+        generator_version=container.generator_version,
         llm_available=container.llm_available,
         llm_error=container.llm_error,
     )
@@ -83,15 +86,25 @@ def metrics() -> MetricsResponse:
 )
 def create_ticket(
     request: CreateTicketRequest,
+    response: Response,
     use_case: ProcessTicketUseCase = Depends(get_process_ticket_use_case),
 ) -> CreateTicketResponse:
-    result = use_case.execute(
-        external_id=request.external_id,
-        channel=request.channel,
-        text=request.text,
-        user_id=request.user_id,
-        metadata=request.metadata.model_dump(mode="json"),
-    )
+    try:
+        result = use_case.execute(
+            external_id=request.external_id,
+            channel=request.channel,
+            text=request.text,
+            user_id=request.user_id,
+            metadata=request.metadata.model_dump(mode="json"),
+        )
+    except DuplicateTicketConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    if not result.created:
+        response.status_code = status.HTTP_200_OK
 
     ticket = result.ticket
     decision = result.decision
@@ -105,6 +118,7 @@ def create_ticket(
         confidence=decision.confidence,
         risk_level=decision.risk_level,
         reason=decision.reason,
+        idempotent_replay=not result.created,
     )
 
 

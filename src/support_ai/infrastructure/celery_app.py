@@ -1,6 +1,11 @@
 import os
 
 from celery import Celery
+from celery.signals import worker_process_init
+
+from support_ai.infrastructure.workers.bootstrap import (
+    warm_generation_worker,
+)
 
 
 def create_celery_app() -> Celery:
@@ -32,5 +37,11 @@ def create_celery_app() -> Celery:
     )
     return app
 
+
+def _warm_generation_worker(**kwargs) -> None:
+    warm_generation_worker()
+
+
+worker_process_init.connect(_warm_generation_worker)
 
 celery_app = create_celery_app()

@@ -169,3 +169,48 @@ def test_unknown_request_fields_are_rejected():
     )
 
     assert response.status_code == 422
+
+
+def test_duplicate_external_ticket_returns_same_ticket():
+    payload = {
+        "external_id": "duplicate-api-1",
+        "channel": "web",
+        "text": "Как поменять пароль?",
+        "user_id": "user-1",
+        "metadata": {
+            "language": "ru",
+            "client": "web",
+        },
+    }
+
+    with TestClient(create_app()) as client:
+        first = client.post("/tickets", json=payload)
+        second = client.post("/tickets", json=payload)
+
+        assert first.status_code == 201
+        assert second.status_code == 200
+        assert second.json()["ticket_id"] == first.json()["ticket_id"]
+        assert second.json()["idempotent_replay"] is True
+
+
+def test_duplicate_external_ticket_with_conflicting_payload_returns_409():
+    payload = {
+        "external_id": "duplicate-api-2",
+        "channel": "web",
+        "text": "Как поменять пароль?",
+        "user_id": "user-1",
+        "metadata": {
+            "language": "ru",
+            "client": "web",
+        },
+    }
+
+    with TestClient(create_app()) as client:
+        first = client.post("/tickets", json=payload)
+        conflicting = dict(payload)
+        conflicting["text"] = "Другой запрос"
+
+        second = client.post("/tickets", json=conflicting)
+
+        assert first.status_code == 201
+        assert second.status_code == 409

@@ -1,13 +1,10 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
-from support_ai.adapters.in_memory import (
-    InMemoryAnswerRepository,
-    InMemoryDecisionRepository,
-    InMemoryRetrievalResultRepository,
-    InMemoryTicketRepository,
-)
+from support_ai.adapters.in_memory import InMemoryRetrievalResultRepository
 from support_ai.adapters.llm import build_answer_generator
+from support_ai.adapters.observability import InMemoryMetricsRecorder
 from support_ai.adapters.retrieval import TfidfKnowledgeBaseRetriever
 from support_ai.adapters.safety import DeterministicSafetyChecker
 from support_ai.application.ports.repositories import (
@@ -17,19 +14,13 @@ from support_ai.application.ports.repositories import (
     TicketRepository,
 )
 from support_ai.application.use_cases.generate_answer import GenerateAnswerUseCase
+from support_ai.infrastructure.persistence_factory import build_repositories
+from support_ai.infrastructure.paths import resolve_knowledge_base_path
 
 
-def default_knowledge_base_path() -> Path:
-    return Path(__file__).resolve().parents[4] / "data" / "knowledge_base.json"
 
 
 class WorkerContainer:
-    """Composition root for answer-generation workers.
-
-    Defaults use in-memory persistence, real local TF-IDF retrieval,
-    deterministic mock generation and a deterministic safety checker.
-    """
-
     def __init__(
         self,
         *,
@@ -39,22 +30,64 @@ class WorkerContainer:
         retrieval_result_repository: RetrievalResultRepository | None = None,
         knowledge_base_path: str | Path | None = None,
     ) -> None:
-        self.ticket_repository = (
-            ticket_repository or InMemoryTicketRepository()
-        )
-        self.decision_repository = (
-            decision_repository or InMemoryDecisionRepository()
-        )
-        self.answer_repository = (
-            answer_repository or InMemoryAnswerRepository()
-        )
-        self.retrieval_result_repository = (
-            retrieval_result_repository
-            or InMemoryRetrievalResultRepository()
+        self.repositories = None
+
+        if all(
+            repository is None
+            for repository in (
+                ticket_repository,
+                decision_repository,
+                answer_repository,
+                retrieval_result_repository,
+            )
+        ):
+            self.repositories = build_repositories(
+                os.getenv("PERSISTENCE_BACKEND", "memory"),
+                database_url=os.getenv(
+                    "DATABASE_URL",
+                    "sqlite:///./support_ai.db",
+                ),
+            )
+            ticket_repository = self.repositories.tickets
+            decision_repository = self.repositories.decisions
+            answer_repository = self.repositories.answers
+            retrieval_result_repository = (
+                self.repositories.retrieval_results
+            )
+
+        supplied_core = (
+            ticket_repository is not None
+            and decision_repository is not None
+            and answer_repository is not None
         )
 
+        if supplied_core and retrieval_result_repository is None:
+            retrieval_result_repository = (
+                InMemoryRetrievalResultRepository()
+            )
+
+        if any(
+            repository is None
+            for repository in (
+                ticket_repository,
+                decision_repository,
+                answer_repository,
+                retrieval_result_repository,
+            )
+        ):
+            raise ValueError(
+                "ticket, decision and answer repositories "
+                "must be supplied together"
+            )
+
+        self.ticket_repository = ticket_repository
+        self.decision_repository = decision_repository
+        self.answer_repository = answer_repository
+        self.retrieval_result_repository = retrieval_result_repository
+        self.metrics = InMemoryMetricsRecorder()
+
         self.retriever = TfidfKnowledgeBaseRetriever.from_json(
-            knowledge_base_path or default_knowledge_base_path()
+            resolve_knowledge_base_path(knowledge_base_path)
         )
         self.generator = build_answer_generator()
         self.safety_checker = DeterministicSafetyChecker()
@@ -68,7 +101,12 @@ class WorkerContainer:
             generator=self.generator,
             safety_checker=self.safety_checker,
             retrieval_score_threshold=0.15,
+            metrics=self.metrics,
         )
+
+    def close(self) -> None:
+        if self.repositories is not None:
+            self.repositories.close()
 
 
 @lru_cache

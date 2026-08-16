@@ -69,3 +69,60 @@ def test_risky_ticket_is_never_enqueued_for_llm():
     assert result.ticket.route is HandlingRoute.HUMAN
     assert queue.items == []
     assert decision_repo.items[0].reason is DecisionReason.HIGH_RISK_CATEGORY
+
+
+def test_same_external_id_is_idempotent():
+    use_case, ticket_repo, decision_repo, queue = build_use_case(
+        classifier=FakeClassifier(TicketCategory.ACCOUNT, 0.95)
+    )
+
+    first = use_case.execute(
+        external_id="upstream-1",
+        channel=Channel.WEB,
+        text="Как поменять пароль?",
+        user_id="user-1",
+    )
+    second = use_case.execute(
+        external_id="upstream-1",
+        channel=Channel.WEB,
+        text="Как поменять пароль?",
+        user_id="user-1",
+    )
+
+    assert first.created is True
+    assert second.created is False
+    assert second.ticket.id == first.ticket.id
+    assert len(ticket_repo.items) == 1
+    assert len(decision_repo.items) == 1
+    assert queue.items == [first.ticket.id]
+
+
+def test_same_external_id_with_different_payload_is_conflict():
+    use_case, ticket_repo, decision_repo, queue = build_use_case(
+        classifier=FakeClassifier(TicketCategory.ACCOUNT, 0.95)
+    )
+
+    use_case.execute(
+        external_id="upstream-1",
+        channel=Channel.WEB,
+        text="Как поменять пароль?",
+        user_id="user-1",
+    )
+
+    from support_ai.application.use_cases.process_ticket import (
+        DuplicateTicketConflictError,
+    )
+
+    import pytest
+
+    with pytest.raises(DuplicateTicketConflictError):
+        use_case.execute(
+            external_id="upstream-1",
+            channel=Channel.WEB,
+            text="Совсем другой запрос",
+            user_id="user-1",
+        )
+
+    assert len(ticket_repo.items) == 1
+    assert len(decision_repo.items) == 1
+    assert len(queue.items) == 1
