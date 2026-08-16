@@ -1,0 +1,22 @@
+[
+  {
+    "id": "account-password-reset",
+    "text": "Password reset. Как поменять пароль: open Settings > Security, choose Change password, confirm the current password and set a new one. If you forgot the current password, use Forgot password on the sign-in screen."
+  },
+  {
+    "id": "account-email-change",
+    "text": "Email change. Как изменить email или почту: open Settings > Account > Email, enter the new address and confirm it using the verification message."
+  },
+  {
+    "id": "subscription-cancel",
+    "text": "Subscription cancellation. Как отключить подписку: open Settings > Subscription and choose Cancel subscription. Access remains active until the end of the paid period."
+  },
+  {
+    "id": "technical-app-troubleshooting",
+    "text": "Application troubleshooting. Если приложение не работает, падает или не загружается: update the app, restart it, check the network connection and retry. If the issue persists, send the app version and platform to support."
+  },
+  {
+    "id": "profile-notifications",
+    "text": "Notification settings. Как отключить уведомления: open Settings > Notifications and disable the required notification channels."
+  }
+]
