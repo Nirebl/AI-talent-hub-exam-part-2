@@ -19,6 +19,7 @@ from support_ai.infrastructure.api.schemas import (
     HealthResponse,
     MetricsResponse,
     ReadyResponse,
+    RetrievalResultResponse,
     TicketAnswerResponse,
     TicketDetailsResponse,
 )
@@ -142,6 +143,18 @@ def get_ticket(
             model_version=answer.model_version,
         )
 
+    retrieval_results = [
+        RetrievalResultResponse(
+            retrieval_run_id=item.retrieval_run_id,
+            document_id=item.document_id,
+            rank=item.rank,
+            score=item.score,
+            retriever_name=item.retriever_name,
+            retriever_version=item.retriever_version,
+        )
+        for item in result.retrieval_results
+    ]
+
     return TicketDetailsResponse(
         ticket_id=ticket.id,
         external_id=ticket.external_id,
@@ -152,5 +165,6 @@ def get_ticket(
         risk_level=ticket.risk_level,
         contains_pii=ticket.contains_pii,
         reason=decision.reason if decision else None,
+        retrieval_results=retrieval_results,
         answer=answer_response,
     )

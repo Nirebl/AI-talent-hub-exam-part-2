@@ -60,6 +60,17 @@ class TicketAnswerResponse(BaseModel):
     model_version: str | None
 
 
+class RetrievalResultResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    retrieval_run_id: UUID
+    document_id: str
+    rank: int
+    score: float = Field(ge=0.0, le=1.0)
+    retriever_name: str
+    retriever_version: str
+
+
 class TicketDetailsResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -72,6 +83,7 @@ class TicketDetailsResponse(BaseModel):
     risk_level: RiskLevel | None
     contains_pii: bool
     reason: DecisionReason | None
+    retrieval_results: list[RetrievalResultResponse]
     answer: TicketAnswerResponse | None
 
 

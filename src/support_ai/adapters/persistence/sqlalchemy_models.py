@@ -92,3 +92,29 @@ class AnswerModel(Base):
         DateTime(timezone=True),
         nullable=False,
     )
+
+
+class RetrievalResultModel(Base):
+    __tablename__ = "retrieval_results"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    ticket_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("tickets.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    retrieval_run_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        nullable=False,
+        index=True,
+    )
+    document_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    rank: Mapped[int] = mapped_column(nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    retriever_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    retriever_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )

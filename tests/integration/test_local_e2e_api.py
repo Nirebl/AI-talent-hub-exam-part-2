@@ -57,6 +57,12 @@ def test_local_runtime_processes_safe_ticket_end_to_end(monkeypatch):
 
         assert result["status"] == "resolved"
         assert result["route"] == "llm"
+        assert result["retrieval_results"]
+        assert result["retrieval_results"][0]["rank"] == 1
+        assert (
+            result["retrieval_results"][0]["retriever_name"]
+            == "tfidf-knowledge-base-retriever"
+        )
         assert result["answer"] is not None
         assert result["answer"]["source"] == "llm"
         assert result["answer"]["status"] == "sent"

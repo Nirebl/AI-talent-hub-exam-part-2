@@ -1,17 +1,18 @@
 from time import perf_counter
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from support_ai.application.observability import ensure_metrics
 from support_ai.application.ports.contracts import (
     AnswerGenerator,
     AnswerRepository,
     DecisionRepository,
+    RetrievalResultRepository,
     Retriever,
     SafetyChecker,
     TicketRepository,
 )
 from support_ai.application.ports.observability import MetricsRecorder
-from support_ai.domain.entities import Answer, Decision
+from support_ai.domain.entities import Answer, Decision, RetrievalResult
 from support_ai.domain.enums import (
     AnswerSource,
     AnswerStatus,
@@ -31,6 +32,7 @@ class GenerateAnswerUseCase:
         ticket_repository: TicketRepository,
         decision_repository: DecisionRepository,
         answer_repository: AnswerRepository,
+        retrieval_result_repository: RetrievalResultRepository,
         retriever: Retriever,
         generator: AnswerGenerator,
         safety_checker: SafetyChecker,
@@ -44,6 +46,7 @@ class GenerateAnswerUseCase:
         self._ticket_repository = ticket_repository
         self._decision_repository = decision_repository
         self._answer_repository = answer_repository
+        self._retrieval_result_repository = retrieval_result_repository
         self._retriever = retriever
         self._generator = generator
         self._safety_checker = safety_checker
@@ -65,6 +68,26 @@ class GenerateAnswerUseCase:
         started = perf_counter()
         retrieved = self._retriever.retrieve(ticket.text, top_k=3)
         self._observe("generation.retrieval_ms", started)
+
+        retrieval_run_id = uuid4()
+        retrieval_results = [
+            RetrievalResult(
+                ticket_id=ticket.id,
+                retrieval_run_id=retrieval_run_id,
+                document_id=document.document_id,
+                rank=rank,
+                score=document.score,
+                retriever_name=self._retriever.name,
+                retriever_version=self._retriever.version,
+            )
+            for rank, document in enumerate(retrieved, start=1)
+        ]
+
+        started = perf_counter()
+        self._retrieval_result_repository.add_many(
+            retrieval_results
+        )
+        self._observe("generation.retrieval_audit_ms", started)
 
         if (
             not retrieved

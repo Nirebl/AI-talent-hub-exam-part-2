@@ -4,6 +4,7 @@ from pathlib import Path
 from support_ai.adapters.in_memory import (
     InMemoryAnswerRepository,
     InMemoryDecisionRepository,
+    InMemoryRetrievalResultRepository,
     InMemoryTicketRepository,
 )
 from support_ai.adapters.llm import build_answer_generator
@@ -12,6 +13,7 @@ from support_ai.adapters.safety import DeterministicSafetyChecker
 from support_ai.application.ports.repositories import (
     AnswerRepository,
     DecisionRepository,
+    RetrievalResultRepository,
     TicketRepository,
 )
 from support_ai.application.use_cases.generate_answer import GenerateAnswerUseCase
@@ -34,6 +36,7 @@ class WorkerContainer:
         ticket_repository: TicketRepository | None = None,
         decision_repository: DecisionRepository | None = None,
         answer_repository: AnswerRepository | None = None,
+        retrieval_result_repository: RetrievalResultRepository | None = None,
         knowledge_base_path: str | Path | None = None,
     ) -> None:
         self.ticket_repository = (
@@ -44,6 +47,10 @@ class WorkerContainer:
         )
         self.answer_repository = (
             answer_repository or InMemoryAnswerRepository()
+        )
+        self.retrieval_result_repository = (
+            retrieval_result_repository
+            or InMemoryRetrievalResultRepository()
         )
 
         self.retriever = TfidfKnowledgeBaseRetriever.from_json(
@@ -56,6 +63,7 @@ class WorkerContainer:
             ticket_repository=self.ticket_repository,
             decision_repository=self.decision_repository,
             answer_repository=self.answer_repository,
+            retrieval_result_repository=self.retrieval_result_repository,
             retriever=self.retriever,
             generator=self.generator,
             safety_checker=self.safety_checker,

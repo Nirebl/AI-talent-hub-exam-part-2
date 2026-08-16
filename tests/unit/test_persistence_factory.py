@@ -1,6 +1,7 @@
 from support_ai.adapters.in_memory import (
     InMemoryAnswerRepository,
     InMemoryDecisionRepository,
+    InMemoryRetrievalResultRepository,
     InMemoryTicketRepository,
 )
 from support_ai.infrastructure.persistence_factory import build_repositories
@@ -12,3 +13,7 @@ def test_memory_backend_builds_in_memory_repositories():
     assert isinstance(bundle.tickets, InMemoryTicketRepository)
     assert isinstance(bundle.decisions, InMemoryDecisionRepository)
     assert isinstance(bundle.answers, InMemoryAnswerRepository)
+    assert isinstance(
+        bundle.retrieval_results,
+        InMemoryRetrievalResultRepository,
+    )

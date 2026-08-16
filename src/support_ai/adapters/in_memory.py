@@ -6,7 +6,7 @@ from uuid import UUID
 
 from support_ai.application.models import RetrievedDocument
 from support_ai.application.use_cases.generate_answer import LLMUnavailableError
-from support_ai.domain.entities import Answer, Decision, Prediction, Ticket
+from support_ai.domain.entities import Answer, Decision, Prediction, RetrievalResult, Ticket
 from support_ai.domain.enums import TicketCategory
 
 
@@ -56,6 +56,42 @@ class InMemoryAnswerRepository:
         return matches[-1] if matches else None
 
 
+class InMemoryRetrievalResultRepository:
+    def __init__(self) -> None:
+        self.items: list[RetrievalResult] = []
+
+    def add_many(
+        self,
+        results: Sequence[RetrievalResult],
+    ) -> None:
+        self.items.extend(results)
+
+    def latest_run_for_ticket(
+        self,
+        ticket_id: UUID,
+    ) -> Sequence[RetrievalResult]:
+        matches = [
+            item
+            for item in self.items
+            if item.ticket_id == ticket_id
+        ]
+        if not matches:
+            return []
+
+        latest = max(
+            matches,
+            key=lambda item: item.created_at,
+        )
+        return sorted(
+            [
+                item
+                for item in matches
+                if item.retrieval_run_id == latest.retrieval_run_id
+            ],
+            key=lambda item: item.rank,
+        )
+
+
 class FakeGenerationQueue:
     def __init__(self) -> None:
         self.items: list[UUID] = []
@@ -87,6 +123,8 @@ class FakePiiDetector:
 class FakeRetriever:
     documents: Sequence[str]
     score: float = 1.0
+    name: str = "fake-retriever"
+    version: str = "test"
 
     def retrieve(
         self,

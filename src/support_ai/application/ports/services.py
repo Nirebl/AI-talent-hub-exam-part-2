@@ -24,6 +24,9 @@ class GenerationQueue(Protocol):
 
 
 class Retriever(Protocol):
+    name: str
+    version: str
+
     def retrieve(
         self,
         query: str,

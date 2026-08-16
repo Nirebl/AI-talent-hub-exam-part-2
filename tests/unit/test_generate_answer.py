@@ -4,6 +4,7 @@ from support_ai.adapters.in_memory import (
     FakeSafetyChecker,
     InMemoryAnswerRepository,
     InMemoryDecisionRepository,
+    InMemoryRetrievalResultRepository,
     InMemoryTicketRepository,
     MockAnswerGenerator,
 )
@@ -38,11 +39,13 @@ def build_use_case(*, generator, safety=True):
     ticket_repo = InMemoryTicketRepository()
     decision_repo = InMemoryDecisionRepository()
     answer_repo = InMemoryAnswerRepository()
+    retrieval_repo = InMemoryRetrievalResultRepository()
 
     use_case = GenerateAnswerUseCase(
         ticket_repository=ticket_repo,
         decision_repository=decision_repo,
         answer_repository=answer_repo,
+        retrieval_result_repository=retrieval_repo,
         retriever=FakeRetriever(["Пароль меняется в настройках безопасности."]),
         generator=generator,
         safety_checker=FakeSafetyChecker(safety),
@@ -117,11 +120,13 @@ def test_low_retrieval_score_falls_back_to_human():
     ticket_repo = InMemoryTicketRepository()
     decision_repo = InMemoryDecisionRepository()
     answer_repo = InMemoryAnswerRepository()
+    retrieval_repo = InMemoryRetrievalResultRepository()
 
     use_case = GenerateAnswerUseCase(
         ticket_repository=ticket_repo,
         decision_repository=decision_repo,
         answer_repository=answer_repo,
+        retrieval_result_repository=retrieval_repo,
         retriever=FakeRetriever(
             ["Weakly related context"],
             score=0.05,
@@ -144,3 +149,45 @@ def test_low_retrieval_score_falls_back_to_human():
         decision_repo.items[-1].reason
         is DecisionReason.INSUFFICIENT_RETRIEVAL_CONTEXT
     )
+
+
+def test_retrieval_results_are_audited():
+    ticket_repo = InMemoryTicketRepository()
+    decision_repo = InMemoryDecisionRepository()
+    answer_repo = InMemoryAnswerRepository()
+    retrieval_repo = InMemoryRetrievalResultRepository()
+
+    use_case = GenerateAnswerUseCase(
+        ticket_repository=ticket_repo,
+        decision_repository=decision_repo,
+        answer_repository=answer_repo,
+        retrieval_result_repository=retrieval_repo,
+        retriever=FakeRetriever(
+            [
+                "Primary context",
+                "Secondary context",
+            ],
+            score=0.9,
+        ),
+        generator=MockAnswerGenerator("Safe answer"),
+        safety_checker=FakeSafetyChecker(True),
+    )
+
+    ticket = make_llm_ticket()
+    ticket_repo.add(ticket)
+
+    use_case.execute(ticket.id)
+
+    results = retrieval_repo.latest_run_for_ticket(ticket.id)
+
+    assert [item.rank for item in results] == [1, 2]
+    assert [item.document_id for item in results] == [
+        "fake-0",
+        "fake-1",
+    ]
+    assert all(item.score == 0.9 for item in results)
+    assert all(
+        item.retriever_name == "fake-retriever"
+        for item in results
+    )
+    assert len({item.retrieval_run_id for item in results}) == 1

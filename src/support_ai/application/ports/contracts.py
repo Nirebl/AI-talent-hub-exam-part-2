@@ -1,6 +1,7 @@
 from .repositories import (
     AnswerRepository,
     DecisionRepository,
+    RetrievalResultRepository,
     TicketRepository,
 )
 from .services import (
@@ -16,6 +17,7 @@ __all__ = [
     "AnswerGenerator",
     "AnswerRepository",
     "DecisionRepository",
+    "RetrievalResultRepository",
     "GenerationQueue",
     "PiiDetector",
     "Retriever",

@@ -113,3 +113,24 @@ class Answer:
     model_version: str | None = None
     id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=utc_now)
+
+
+@dataclass(frozen=True, slots=True)
+class RetrievalResult:
+    ticket_id: UUID
+    retrieval_run_id: UUID
+    document_id: str
+    rank: int
+    score: float
+    retriever_name: str
+    retriever_version: str
+    id: UUID = field(default_factory=uuid4)
+    created_at: datetime = field(default_factory=utc_now)
+
+    def __post_init__(self) -> None:
+        if self.rank <= 0:
+            raise ValueError("rank must be positive")
+        if not 0.0 <= self.score <= 1.0:
+            raise ValueError("score must be in [0, 1]")
+        if not self.document_id.strip():
+            raise ValueError("document_id must not be empty")

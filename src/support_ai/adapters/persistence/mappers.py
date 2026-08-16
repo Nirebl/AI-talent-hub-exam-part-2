@@ -1,4 +1,4 @@
-from support_ai.domain.entities import Answer, Decision, Ticket
+from support_ai.domain.entities import Answer, Decision, RetrievalResult, Ticket
 from support_ai.domain.enums import (
     AnswerSource,
     AnswerStatus,
@@ -10,7 +10,7 @@ from support_ai.domain.enums import (
     TicketStatus,
 )
 
-from .sqlalchemy_models import AnswerModel, DecisionModel, TicketModel
+from .sqlalchemy_models import AnswerModel, DecisionModel, RetrievalResultModel, TicketModel
 
 
 def ticket_to_model(ticket: Ticket) -> TicketModel:
@@ -120,5 +120,37 @@ def answer_to_domain(model: AnswerModel) -> Answer:
         status=AnswerStatus(model.status),
         model_name=model.model_name,
         model_version=model.model_version,
+        created_at=model.created_at,
+    )
+
+
+def retrieval_result_to_model(
+    result: RetrievalResult,
+) -> RetrievalResultModel:
+    return RetrievalResultModel(
+        id=result.id,
+        ticket_id=result.ticket_id,
+        retrieval_run_id=result.retrieval_run_id,
+        document_id=result.document_id,
+        rank=result.rank,
+        score=result.score,
+        retriever_name=result.retriever_name,
+        retriever_version=result.retriever_version,
+        created_at=result.created_at,
+    )
+
+
+def retrieval_result_to_domain(
+    model: RetrievalResultModel,
+) -> RetrievalResult:
+    return RetrievalResult(
+        id=model.id,
+        ticket_id=model.ticket_id,
+        retrieval_run_id=model.retrieval_run_id,
+        document_id=model.document_id,
+        rank=model.rank,
+        score=model.score,
+        retriever_name=model.retriever_name,
+        retriever_version=model.retriever_version,
         created_at=model.created_at,
     )
