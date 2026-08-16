@@ -16,10 +16,15 @@ from support_ai.domain.enums import Channel, HandlingRoute
 from support_ai.domain.policies import RiskPolicy
 
 
+class DuplicateTicketConflictError(ValueError):
+    pass
+
+
 @dataclass(frozen=True, slots=True)
 class ProcessTicketResult:
     ticket: Ticket
     decision: Decision
+    created: bool
 
 
 class ProcessTicketUseCase:
@@ -52,6 +57,45 @@ class ProcessTicketUseCase:
         metadata: dict[str, Any] | None = None,
     ) -> ProcessTicketResult:
         total_started = perf_counter()
+
+        if external_id is not None:
+            existing = self._ticket_repository.find_by_external_id(
+                channel=channel,
+                external_id=external_id,
+            )
+            if existing is not None:
+                if (
+                    existing.text != text.strip()
+                    or existing.user_id != user_id
+                ):
+                    self._metrics.increment(
+                        "routing.idempotency.conflict"
+                    )
+                    raise DuplicateTicketConflictError(
+                        "external_id already exists for channel "
+                        "with a different payload"
+                    )
+
+                decision = self._decision_repository.latest_for_ticket(
+                    existing.id
+                )
+                if decision is None:
+                    raise RuntimeError(
+                        "existing ticket has no routing decision"
+                    )
+
+                self._metrics.increment(
+                    "routing.idempotency.reused"
+                )
+                self._observe(
+                    "routing.total_ms",
+                    total_started,
+                )
+                return ProcessTicketResult(
+                    ticket=existing,
+                    decision=decision,
+                    created=False,
+                )
 
         ticket = Ticket(
             text=text,
@@ -113,6 +157,7 @@ class ProcessTicketUseCase:
         return ProcessTicketResult(
             ticket=ticket,
             decision=decision,
+            created=True,
         )
 
     def _observe(self, name: str, started: float) -> None:

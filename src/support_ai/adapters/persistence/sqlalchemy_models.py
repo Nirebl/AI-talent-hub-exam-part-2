@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text, Uuid
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -14,6 +14,13 @@ class Base(DeclarativeBase):
 
 class TicketModel(Base):
     __tablename__ = "tickets"
+    __table_args__ = (
+        UniqueConstraint(
+            "channel",
+            "external_id",
+            name="uq_tickets_channel_external_id",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     external_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)

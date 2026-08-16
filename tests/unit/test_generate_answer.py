@@ -191,3 +191,32 @@ def test_retrieval_results_are_audited():
         for item in results
     )
     assert len({item.retrieval_run_id for item in results}) == 1
+
+
+def test_redelivered_task_does_not_create_second_answer():
+    ticket_repo = InMemoryTicketRepository()
+    decision_repo = InMemoryDecisionRepository()
+    answer_repo = InMemoryAnswerRepository()
+    retrieval_repo = InMemoryRetrievalResultRepository()
+
+    use_case = GenerateAnswerUseCase(
+        ticket_repository=ticket_repo,
+        decision_repository=decision_repo,
+        answer_repository=answer_repo,
+        retrieval_result_repository=retrieval_repo,
+        retriever=FakeRetriever(["Password reset context"], score=0.9),
+        generator=MockAnswerGenerator("Safe answer"),
+        safety_checker=FakeSafetyChecker(True),
+    )
+
+    ticket = make_llm_ticket()
+    ticket_repo.add(ticket)
+
+    first = use_case.execute(ticket.id)
+    second = use_case.execute(ticket.id)
+
+    assert first is not None
+    assert second is not None
+    assert second.id == first.id
+    assert len(answer_repo.items) == 1
+    assert len(retrieval_repo.items) == 1

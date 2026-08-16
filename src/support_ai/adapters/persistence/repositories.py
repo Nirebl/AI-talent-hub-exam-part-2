@@ -36,7 +36,7 @@ class SqlAlchemyTicketRepository:
 
     def add(self, ticket: Ticket) -> None:
         self._session.add(ticket_to_model(ticket))
-        self._session.flush()
+        self._session.commit()
 
     def get(self, ticket_id: UUID) -> Ticket:
         model = self._session.get(TicketModel, ticket_id)
@@ -49,7 +49,23 @@ class SqlAlchemyTicketRepository:
         if model is None:
             raise KeyError(f"ticket not found: {ticket.id}")
         update_ticket_model(model, ticket)
-        self._session.flush()
+        self._session.commit()
+
+    def find_by_external_id(
+        self,
+        *,
+        channel,
+        external_id: str,
+    ) -> Ticket | None:
+        model = self._session.scalar(
+            select(TicketModel)
+            .where(
+                TicketModel.channel == channel.value,
+                TicketModel.external_id == external_id,
+            )
+            .limit(1)
+        )
+        return ticket_to_domain(model) if model else None
 
 
 class SqlAlchemyDecisionRepository:
@@ -58,7 +74,7 @@ class SqlAlchemyDecisionRepository:
 
     def add(self, decision: Decision) -> None:
         self._session.add(decision_to_model(decision))
-        self._session.flush()
+        self._session.commit()
 
     def latest_for_ticket(self, ticket_id: UUID) -> Decision | None:
         model = self._session.scalar(
@@ -76,7 +92,7 @@ class SqlAlchemyAnswerRepository:
 
     def add(self, answer: Answer) -> None:
         self._session.add(answer_to_model(answer))
-        self._session.flush()
+        self._session.commit()
 
     def latest_for_ticket(self, ticket_id: UUID) -> Answer | None:
         model = self._session.scalar(
@@ -100,7 +116,7 @@ class SqlAlchemyRetrievalResultRepository:
             retrieval_result_to_model(result)
             for result in results
         )
-        self._session.flush()
+        self._session.commit()
 
     def latest_run_for_ticket(
         self,

@@ -18,6 +18,7 @@ from support_ai.domain.enums import (
     AnswerStatus,
     DecisionReason,
     HandlingRoute,
+    TicketStatus,
 )
 
 
@@ -58,6 +59,22 @@ class GenerateAnswerUseCase:
         total_started = perf_counter()
 
         ticket = self._ticket_repository.get(ticket_id)
+
+        if ticket.status is TicketStatus.RESOLVED:
+            self._metrics.increment(
+                "generation.idempotency.already_resolved"
+            )
+            return self._answer_repository.latest_for_ticket(
+                ticket.id
+            )
+
+        if ticket.route is HandlingRoute.HUMAN:
+            self._metrics.increment(
+                "generation.idempotency.already_human"
+            )
+            return self._answer_repository.latest_for_ticket(
+                ticket.id
+            )
 
         if ticket.route is not HandlingRoute.LLM:
             raise ValueError("ticket is not routed to LLM")
