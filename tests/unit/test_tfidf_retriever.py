@@ -78,3 +78,28 @@ def test_technical_query_clears_poc_threshold():
 
     assert results[0].document_id == "technical"
     assert results[0].score >= 0.15
+
+
+def test_registration_query_returns_registration_article(tmp_path):
+    path = tmp_path / "knowledge_base.json"
+    path.write_text(
+        """[
+          {
+            "id": "account-registration",
+            "text": "Как создать аккаунт или зарегистрироваться. Create account and confirm email."
+          },
+          {
+            "id": "account-password-reset",
+            "text": "Как поменять пароль. Password reset."
+          }
+        ]""",
+        encoding="utf-8",
+    )
+
+    retriever = TfidfKnowledgeBaseRetriever.from_json(path)
+
+    results = retriever.retrieve("Как создать аккаунт?", top_k=2)
+
+    assert results
+    assert results[0].document_id == "account-registration"
+    assert results[0].score >= 0.15

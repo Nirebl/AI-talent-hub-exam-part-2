@@ -18,7 +18,7 @@ class KnowledgeBaseDocument:
 
 class TfidfKnowledgeBaseRetriever:
     name = "tfidf-knowledge-base-retriever"
-    version = "v1"
+    version = "v2"
 
     def __init__(
         self,

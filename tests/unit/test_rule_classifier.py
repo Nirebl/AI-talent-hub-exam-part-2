@@ -47,3 +47,12 @@ def test_unknown_ticket_abstains_with_low_confidence():
 
     assert prediction.category is TicketCategory.OTHER
     assert prediction.confidence < 0.80
+
+
+def test_account_registration_is_classified_as_account_with_high_confidence():
+    classifier = RuleBasedTicketClassifier()
+
+    prediction = classifier.predict("Как создать аккаунт?")
+
+    assert prediction.category is TicketCategory.ACCOUNT
+    assert prediction.confidence >= 0.80

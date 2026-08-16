@@ -24,7 +24,7 @@ class RuleBasedTicketClassifier:
     """
 
     name = "rule-based-ticket-classifier"
-    version = "v1"
+    version = "v2"
 
     _RULES = (
         CategoryRule(
@@ -112,6 +112,16 @@ class RuleBasedTicketClassifier:
                 "не могу войти",
                 "изменить email",
                 "сменить почту",
+                "create account",
+                "create an account",
+                "sign up",
+                "register account",
+                "как создать аккаунт",
+                "создать аккаунт",
+                "как зарегистрироваться",
+                "зарегистрироваться",
+                "создать учетную запись",
+                "создать учётную запись",
             ),
             keywords=(
                 "password",
@@ -122,6 +132,10 @@ class RuleBasedTicketClassifier:
                 "войти",
                 "почту",
                 "email",
+                "регистрация",
+                "зарегистрироваться",
+                "signup",
+                "register",
             ),
         ),
         CategoryRule(

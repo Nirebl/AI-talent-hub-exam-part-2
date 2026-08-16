@@ -1,5 +1,9 @@
 [
   {
+    "id": "account-registration",
+    "text": "Account registration. Как создать аккаунт или зарегистрироваться: open the sign-up screen, choose Create account, enter your email, create a password and confirm the email using the verification message."
+  },
+  {
     "id": "account-password-reset",
     "text": "Password reset. Как поменять пароль: open Settings > Security, choose Change password, confirm the current password and set a new one. If you forgot the current password, use Forgot password on the sign-in screen."
   },
