@@ -2,6 +2,7 @@ from support_ai.adapters.in_memory import (
     FakeRetriever,
     InMemoryAnswerRepository,
     InMemoryDecisionRepository,
+    InMemoryRetrievalResultRepository,
     InMemoryTicketRepository,
     MockAnswerGenerator,
 )
@@ -23,6 +24,7 @@ def test_real_safety_checker_blocks_financial_claim_and_escalates():
     ticket_repository = InMemoryTicketRepository()
     decision_repository = InMemoryDecisionRepository()
     answer_repository = InMemoryAnswerRepository()
+    retrieval_result_repository = InMemoryRetrievalResultRepository()
 
     ticket = Ticket(
         channel=Channel.WEB,
@@ -43,6 +45,7 @@ def test_real_safety_checker_blocks_financial_claim_and_escalates():
         ticket_repository=ticket_repository,
         decision_repository=decision_repository,
         answer_repository=answer_repository,
+        retrieval_result_repository=retrieval_result_repository,
         retriever=FakeRetriever(
             ["Password reset is available in Settings > Security."],
             score=0.95,

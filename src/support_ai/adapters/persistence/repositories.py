@@ -1,15 +1,23 @@
+from typing import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from support_ai.domain.entities import Answer, Decision, Ticket
+from support_ai.domain.entities import (
+    Answer,
+    Decision,
+    RetrievalResult,
+    Ticket,
+)
 
 from .mappers import (
     answer_to_domain,
     answer_to_model,
     decision_to_domain,
     decision_to_model,
+    retrieval_result_to_domain,
+    retrieval_result_to_model,
     ticket_to_domain,
     ticket_to_model,
     update_ticket_model,
@@ -17,6 +25,7 @@ from .mappers import (
 from .sqlalchemy_models import (
     AnswerModel,
     DecisionModel,
+    RetrievalResultModel,
     TicketModel,
 )
 
@@ -77,3 +86,46 @@ class SqlAlchemyAnswerRepository:
             .limit(1)
         )
         return answer_to_domain(model) if model else None
+
+
+class SqlAlchemyRetrievalResultRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add_many(
+        self,
+        results: Sequence[RetrievalResult],
+    ) -> None:
+        self._session.add_all(
+            retrieval_result_to_model(result)
+            for result in results
+        )
+        self._session.flush()
+
+    def latest_run_for_ticket(
+        self,
+        ticket_id: UUID,
+    ) -> Sequence[RetrievalResult]:
+        latest = self._session.scalar(
+            select(RetrievalResultModel)
+            .where(RetrievalResultModel.ticket_id == ticket_id)
+            .order_by(RetrievalResultModel.created_at.desc())
+            .limit(1)
+        )
+        if latest is None:
+            return []
+
+        models = self._session.scalars(
+            select(RetrievalResultModel)
+            .where(
+                RetrievalResultModel.ticket_id == ticket_id,
+                RetrievalResultModel.retrieval_run_id
+                == latest.retrieval_run_id,
+            )
+            .order_by(RetrievalResultModel.rank.asc())
+        ).all()
+
+        return [
+            retrieval_result_to_domain(model)
+            for model in models
+        ]

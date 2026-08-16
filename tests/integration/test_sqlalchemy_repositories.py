@@ -4,14 +4,16 @@ from sqlalchemy.orm import Session
 from support_ai.adapters.persistence.repositories import (
     SqlAlchemyAnswerRepository,
     SqlAlchemyDecisionRepository,
+    SqlAlchemyRetrievalResultRepository,
     SqlAlchemyTicketRepository,
 )
 from support_ai.adapters.persistence.sqlalchemy_models import (
     AnswerModel,
     Base,
     DecisionModel,
+    RetrievalResultModel,
 )
-from support_ai.domain.entities import Answer, Decision, Prediction, Ticket
+from support_ai.domain.entities import Answer, Decision, Prediction, RetrievalResult, Ticket
 from support_ai.domain.enums import (
     AnswerSource,
     AnswerStatus,
@@ -149,3 +151,47 @@ def test_answer_repository_persists_llm_answer():
     assert row.ticket_id == ticket.id
     assert row.source == "llm"
     assert row.status == "sent"
+
+
+def test_retrieval_result_repository_persists_ranked_audit_rows():
+    from uuid import uuid4
+
+    session = make_session()
+    ticket_repository = SqlAlchemyTicketRepository(session)
+    retrieval_repository = SqlAlchemyRetrievalResultRepository(session)
+    ticket = make_ticket()
+    ticket_repository.add(ticket)
+
+    run_id = uuid4()
+    results = [
+        RetrievalResult(
+            ticket_id=ticket.id,
+            retrieval_run_id=run_id,
+            document_id="doc-a",
+            rank=1,
+            score=0.81,
+            retriever_name="tfidf",
+            retriever_version="v1",
+        ),
+        RetrievalResult(
+            ticket_id=ticket.id,
+            retrieval_run_id=run_id,
+            document_id="doc-b",
+            rank=2,
+            score=0.22,
+            retriever_name="tfidf",
+            retriever_version="v1",
+        ),
+    ]
+
+    retrieval_repository.add_many(results)
+    session.commit()
+
+    loaded = retrieval_repository.latest_run_for_ticket(ticket.id)
+
+    assert [item.document_id for item in loaded] == [
+        "doc-a",
+        "doc-b",
+    ]
+    assert [item.rank for item in loaded] == [1, 2]
+    assert all(item.retrieval_run_id == run_id for item in loaded)

@@ -7,6 +7,7 @@ from pathlib import Path
 from support_ai.adapters.in_memory import (
     InMemoryAnswerRepository,
     InMemoryDecisionRepository,
+    InMemoryRetrievalResultRepository,
     InMemoryTicketRepository,
 )
 from support_ai.adapters.llm import (
@@ -23,6 +24,7 @@ from support_ai.adapters.safety import DeterministicSafetyChecker
 from support_ai.application.ports.repositories import (
     AnswerRepository,
     DecisionRepository,
+    RetrievalResultRepository,
     TicketRepository,
 )
 from support_ai.application.ports.services import (
@@ -51,6 +53,9 @@ class AppContainer:
         self.ticket_repository: TicketRepository = InMemoryTicketRepository()
         self.decision_repository: DecisionRepository = InMemoryDecisionRepository()
         self.answer_repository: AnswerRepository = InMemoryAnswerRepository()
+        self.retrieval_result_repository: RetrievalResultRepository = (
+            InMemoryRetrievalResultRepository()
+        )
         self.metrics = InMemoryMetricsRecorder()
 
         self.classifier: TicketClassifier = RuleBasedTicketClassifier()
@@ -81,6 +86,7 @@ class AppContainer:
             ticket_repository=self.ticket_repository,
             decision_repository=self.decision_repository,
             answer_repository=self.answer_repository,
+            retrieval_result_repository=self.retrieval_result_repository,
             retriever=self.retriever,
             generator=self.generator,
             safety_checker=self.safety_checker,
@@ -107,6 +113,7 @@ class AppContainer:
             ticket_repository=self.ticket_repository,
             decision_repository=self.decision_repository,
             answer_repository=self.answer_repository,
+            retrieval_result_repository=self.retrieval_result_repository,
         )
 
     @property

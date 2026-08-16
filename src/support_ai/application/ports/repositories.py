@@ -1,7 +1,12 @@
-from typing import Protocol
+from typing import Protocol, Sequence
 from uuid import UUID
 
-from support_ai.domain.entities import Answer, Decision, Ticket
+from support_ai.domain.entities import (
+    Answer,
+    Decision,
+    RetrievalResult,
+    Ticket,
+)
 
 
 class TicketRepository(Protocol):
@@ -28,4 +33,18 @@ class AnswerRepository(Protocol):
         ...
 
     def latest_for_ticket(self, ticket_id: UUID) -> Answer | None:
+        ...
+
+
+class RetrievalResultRepository(Protocol):
+    def add_many(
+        self,
+        results: Sequence[RetrievalResult],
+    ) -> None:
+        ...
+
+    def latest_run_for_ticket(
+        self,
+        ticket_id: UUID,
+    ) -> Sequence[RetrievalResult]:
         ...
