@@ -1,11 +1,11 @@
 from fastapi.testclient import TestClient
 
 from support_ai.infrastructure.api.app import create_app
-from support_ai.infrastructure.api.dependencies import get_container
+from support_ai.infrastructure.api.dependencies import reset_container
 
 
 def make_client() -> TestClient:
-    get_container.cache_clear()
+    reset_container()
     return TestClient(create_app())
 
 

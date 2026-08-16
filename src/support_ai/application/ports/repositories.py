@@ -19,7 +19,13 @@ class DecisionRepository(Protocol):
     def add(self, decision: Decision) -> None:
         ...
 
+    def latest_for_ticket(self, ticket_id: UUID) -> Decision | None:
+        ...
+
 
 class AnswerRepository(Protocol):
     def add(self, answer: Answer) -> None:
+        ...
+
+    def latest_for_ticket(self, ticket_id: UUID) -> Answer | None:
         ...

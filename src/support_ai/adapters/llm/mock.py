@@ -4,9 +4,7 @@ from typing import Sequence
 
 @dataclass(slots=True)
 class MockAnswerGenerator:
-    answer: str = (
-        "Open Settings > Security and choose the password reset option."
-    )
+    answer: str | None = None
     name: str = "mock-generator"
     version: str = "v1"
 
@@ -16,4 +14,8 @@ class MockAnswerGenerator:
         ticket_text: str,
         context: Sequence[str],
     ) -> str:
-        return self.answer
+        if self.answer is not None:
+            return self.answer
+        if not context:
+            return "NEED_HUMAN_REVIEW"
+        return context[0]

@@ -31,6 +31,14 @@ class InMemoryDecisionRepository:
     def add(self, decision: Decision) -> None:
         self.items.append(decision)
 
+    def latest_for_ticket(self, ticket_id: UUID) -> Decision | None:
+        matches = [
+            item
+            for item in self.items
+            if item.ticket_id == ticket_id
+        ]
+        return matches[-1] if matches else None
+
 
 class InMemoryAnswerRepository:
     def __init__(self) -> None:
@@ -38,6 +46,14 @@ class InMemoryAnswerRepository:
 
     def add(self, answer: Answer) -> None:
         self.items.append(answer)
+
+    def latest_for_ticket(self, ticket_id: UUID) -> Answer | None:
+        matches = [
+            item
+            for item in self.items
+            if item.ticket_id == ticket_id
+        ]
+        return matches[-1] if matches else None
 
 
 class FakeGenerationQueue:
