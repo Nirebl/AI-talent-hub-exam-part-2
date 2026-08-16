@@ -43,6 +43,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       LLM_BACKEND: mock
+      KNOWLEDGE_BASE_PATH: /app/data/knowledge_base.json
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,6 +70,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       LLM_BACKEND: mock
+      KNOWLEDGE_BASE_PATH: /app/data/knowledge_base.json
     depends_on:
       postgres:
         condition: service_healthy

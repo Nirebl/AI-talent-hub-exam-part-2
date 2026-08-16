@@ -26,11 +26,10 @@ from support_ai.application.use_cases.get_ticket_details import (
 from support_ai.application.use_cases.process_ticket import ProcessTicketUseCase
 from support_ai.domain.policies import RiskPolicy
 from support_ai.infrastructure.persistence_factory import build_repositories
+from support_ai.infrastructure.paths import resolve_knowledge_base_path
 from support_ai.infrastructure.queue_factory import build_generation_queue
 
 
-def default_knowledge_base_path() -> Path:
-    return Path(__file__).resolve().parents[4] / "data" / "knowledge_base.json"
 
 
 class AppContainer:
@@ -71,7 +70,7 @@ class AppContainer:
 
         if self.queue_backend != "celery":
             retriever = TfidfKnowledgeBaseRetriever.from_json(
-                default_knowledge_base_path()
+                resolve_knowledge_base_path()
             )
 
             try:

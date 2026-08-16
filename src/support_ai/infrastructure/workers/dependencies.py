@@ -15,10 +15,9 @@ from support_ai.application.ports.repositories import (
 )
 from support_ai.application.use_cases.generate_answer import GenerateAnswerUseCase
 from support_ai.infrastructure.persistence_factory import build_repositories
+from support_ai.infrastructure.paths import resolve_knowledge_base_path
 
 
-def default_knowledge_base_path() -> Path:
-    return Path(__file__).resolve().parents[4] / "data" / "knowledge_base.json"
 
 
 class WorkerContainer:
@@ -88,7 +87,7 @@ class WorkerContainer:
         self.metrics = InMemoryMetricsRecorder()
 
         self.retriever = TfidfKnowledgeBaseRetriever.from_json(
-            knowledge_base_path or default_knowledge_base_path()
+            resolve_knowledge_base_path(knowledge_base_path)
         )
         self.generator = build_answer_generator()
         self.safety_checker = DeterministicSafetyChecker()

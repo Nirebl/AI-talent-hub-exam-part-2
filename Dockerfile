@@ -10,7 +10,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt requirements-llm.txt pyproject.toml ./
+COPY requirements.txt pyproject.toml ./
 
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
@@ -21,6 +21,8 @@ COPY data ./data
 RUN pip install --no-deps .
 
 FROM base AS qwen-worker
+
+COPY requirements-llm.txt ./
 
 RUN pip install -r requirements-llm.txt
 

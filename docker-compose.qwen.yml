@@ -2,6 +2,7 @@ services:
   api:
     environment:
       LLM_BACKEND: qwen
+      KNOWLEDGE_BASE_PATH: /app/data/knowledge_base.json
 
   worker:
     build:
@@ -17,6 +18,7 @@ services:
       - --concurrency=1
     environment:
       LLM_BACKEND: qwen
+      KNOWLEDGE_BASE_PATH: /app/data/knowledge_base.json
       QWEN_MODEL_ID: ${QWEN_MODEL_ID:-Qwen/Qwen3-4B-Instruct-2507}
       QWEN_LOAD_IN_4BIT: ${QWEN_LOAD_IN_4BIT:-true}
       QWEN_MAX_INPUT_TOKENS: ${QWEN_MAX_INPUT_TOKENS:-4096}
