@@ -23,6 +23,20 @@ class InMemoryTicketRepository:
     def save(self, ticket: Ticket) -> None:
         self.items[ticket.id] = ticket
 
+    def find_by_external_id(
+        self,
+        *,
+        channel,
+        external_id: str,
+    ) -> Ticket | None:
+        for ticket in self.items.values():
+            if (
+                ticket.channel == channel
+                and ticket.external_id == external_id
+            ):
+                return ticket
+        return None
+
 
 class InMemoryDecisionRepository:
     def __init__(self) -> None:

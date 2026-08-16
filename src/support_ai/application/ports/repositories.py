@@ -19,6 +19,14 @@ class TicketRepository(Protocol):
     def save(self, ticket: Ticket) -> None:
         ...
 
+    def find_by_external_id(
+        self,
+        *,
+        channel,
+        external_id: str,
+    ) -> Ticket | None:
+        ...
+
 
 class DecisionRepository(Protocol):
     def add(self, decision: Decision) -> None:

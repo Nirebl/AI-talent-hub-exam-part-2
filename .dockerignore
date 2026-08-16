@@ -1,0 +1,11 @@
+.git
+.pytest_cache
+__pycache__
+*.pyc
+.venv
+.env
+support_ai.db
+tests
+docs
+scripts
+requirements-llm.txt

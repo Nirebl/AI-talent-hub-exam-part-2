@@ -47,6 +47,7 @@ class CreateTicketResponse(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     risk_level: RiskLevel
     reason: DecisionReason
+    idempotent_replay: bool = False
 
 
 class TicketAnswerResponse(BaseModel):
